@@ -1,3 +1,10 @@
+/*
+ * ux_setup.h
+ *
+ * Unix setup options
+ *
+ */
+
 typedef struct unix_setup_struct {
 	int disable_color;
 	int force_color;
