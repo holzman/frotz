@@ -42,7 +42,7 @@ void dumb_init_pictures (char *filename)
   float x_scaler, y_scaler;
 
   do {
-    if ((h_version != V6)
+    if ((z_header.h_version != V6)
 	|| !filename
 	|| ((file = fopen (filename, "rb")) == NULL)
 	|| (fread(&gheader, sizeof (gheader), 1, file) != 1))
@@ -62,8 +62,8 @@ void dumb_init_pictures (char *filename)
     pict_info[0].height = num_pictures;
     pict_info[0].width = lookupw(gheader, PIC_FILE_HEADER_VERSION);
 
-    y_scaler = h_screen_rows / 200.0;
-    x_scaler = h_screen_cols / ((flags & 0x08) ? 640.0 : 320.0);
+    y_scaler = z_header.h_screen_rows / 200.0;
+    x_scaler = z_header.h_screen_cols / ((flags & 0x08) ? 640.0 : 320.0);
 
     /* Copy and scale.  */
     for (i = 1; i <= num_pictures; i++) {
@@ -81,10 +81,10 @@ void dumb_init_pictures (char *filename)
   if (raw_info)
     free(raw_info);
   if (success)
-    h_config |= CONFIG_PICTURES;
+    z_header.h_config |= CONFIG_PICTURES;
   else
     {
-      h_flags &= ~GRAPHICS_FLAG;
+      z_header.h_flags &= ~GRAPHICS_FLAG;
       if (filename)
 	fprintf(stderr, "Warning: could not read graphics file %s\n", filename);
     }

@@ -7,6 +7,7 @@
 #include "dumb_frotz.h"
 
 f_setup_t f_setup;
+z_header_t z_header;
 
 #define INFORMATION "\
 An interpreter for all Infocom and other Z-Machine games.\n\
@@ -149,7 +150,7 @@ void os_process_arguments(int argc, char *argv[])
 	exit(1);
     }
 */
-    story_name = argv[zoptind++];
+    f_setup.story_file = argv[zoptind++];
     if (zoptind < argc)
       graphics_filename = argv[zoptind++];
 
@@ -157,24 +158,25 @@ void os_process_arguments(int argc, char *argv[])
 
 void os_init_screen(void)
 {
-  if (h_version == V3 && user_tandy_bit)
-      h_config |= CONFIG_TANDY;
+  if (z_header.h_version == V3 && user_tandy_bit)
+      z_header.h_config |= CONFIG_TANDY;
 
-  if (h_version >= V5 && f_setup.undo_slots == 0)
-      h_flags &= ~UNDO_FLAG;
+  if (z_header.h_version >= V5 && f_setup.undo_slots == 0)
+      z_header.h_flags &= ~UNDO_FLAG;
 
-  h_screen_rows = user_screen_height;
-  h_screen_cols = user_screen_width;
+  z_header.h_screen_rows = user_screen_height;
+  z_header.h_screen_cols = user_screen_width;
 
   if (user_interpreter_number > 0)
-    h_interpreter_number = user_interpreter_number;
+    z_header.h_interpreter_number = user_interpreter_number;
   else {
     /* Use ms-dos for v6 (because that's what most people have the
      * graphics files for), but don't use it for v5 (or Beyond Zork
      * will try to use funky characters).  */
-    h_interpreter_number = h_version == 6 ? INTERP_MSDOS : INTERP_DEC_20;
+    z_header.h_interpreter_number = z_header.h_version == 6 ?
+				INTERP_MSDOS : INTERP_DEC_20;
   }
-  h_interpreter_version = 'F';
+  z_header.h_interpreter_version = 'F';
 
   dumb_init_input();
   dumb_init_output();
@@ -196,6 +198,16 @@ void os_fatal (const char *s)
   fprintf(stderr, "\nFatal error: %s\n", s);
   exit(1);
 }
+
+FILE *os_load_story(void)
+{
+	FILE *fp;
+
+	fp = fopen(f_setup.story_file, "rb");
+	return fp;
+	/* Sorry, but dumb frotz is too dumb to deal with Blorb. */
+}
+
 
 FILE *os_path_open(const char *name, const char *mode)
 {

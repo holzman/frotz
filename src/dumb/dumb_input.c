@@ -79,7 +79,7 @@ static int xgetchar(void)
 /* Read one line, including the newline, into s.  Safely avoids buffer
  * overruns (but that's kind of pointless because there are several
  * other places where I'm not so careful).  */
-static void getline(char *s)
+static void frotz_getline(char *s)
 {
   int c;
   char *p = s;
@@ -203,7 +203,8 @@ static bool dumb_read_line(char *s, char *prompt, bool show_cursor,
       fputs(prompt, stdout);
     else
       dumb_show_prompt(show_cursor, (timeout ? "tTD" : ")>}")[type]);
-    getline(s);
+    fflush(NULL);	/* necessary for bot use (Feb 20, 2003) */
+    frotz_getline(s);
     if ((s[0] != '\\') || ((s[1] != '\0') && !islower(s[1]))) {
       /* Is not a command line.  */
       translate_special_chars(s);
@@ -258,14 +259,14 @@ static bool dumb_read_line(char *s, char *prompt, bool show_cursor,
 	current_page = next_page = runtime_usage;
 	for (;;) {
 	  int i;
-	  for (i = 0; (i < h_screen_rows - 2) && *next_page; i++)
+	  for (i = 0; (i < z_header.h_screen_rows - 2) && *next_page; i++)
 	    next_page = strchr(next_page, '\n') + 1;
 	  printf("%.*s", next_page - current_page, current_page);
 	  current_page = next_page;
 	  if (!*current_page)
 	    break;
 	  printf("HELP: Type <return> for more, or q <return> to stop: ");
-	  getline(s);
+	  frotz_getline(s);
 	  if (!strcmp(s, "q\n"))
 	    break;
 	}
@@ -387,6 +388,7 @@ int os_read_file_name (char *file_name, const char *default_name, int flag)
 
   sprintf(prompt, "Please enter a filename [%s]: ", default_name);
   dumb_read_misc_line(buf, prompt);
+  fflush(NULL);		/* necessary for bot use (Feb 20, 2003) */
   if (strlen(buf) > MAX_FILE_NAME) {
     printf("Filename too long\n");
     return FALSE;
@@ -415,11 +417,11 @@ void os_more_prompt (void)
 
 void dumb_init_input(void)
 {
-  if ((h_version >= V4) && (speed != 0))
-    h_config |= CONFIG_TIMEDINPUT;
+  if ((z_header.h_version >= V4) && (speed != 0))
+    z_header.h_config |= CONFIG_TIMEDINPUT;
 
-  if (h_version >= V5)
-    h_flags &= ~(MOUSE_FLAG | MENU_FLAG);
+  if (z_header.h_version >= V5)
+    z_header.h_flags &= ~(MOUSE_FLAG | MENU_FLAG);
 }
 
 zword os_read_mouse(void)
