@@ -5,6 +5,8 @@
  *
  */
 
+#define CURSES_INTERFACE
+
 #include "../common/frotz.h"
 #include "ux_setup.h"
 
@@ -80,13 +82,17 @@ extern u_setup_t u_setup;
 
 /*** Functions specific to the Unix port of Frotz ***/
 
-bool 	unix_init_pictures(void);       /* ux_pic */
+bool 	unix_init_pictures(void);	/* ux_pic */
+void	unix_init_scrollback(void);	/* ux_screen */
+void	unix_save_screen(int);		/* ux_screen */
+void	unix_do_scrollback(void);	/* ux_screen */
 int     getconfig(char *);
 int     geterrmode(char *);
 int     getcolor(char *);
 int     getbool(char *);
 FILE	*pathopen(const char *, const char *, const char *, char *);
-void	sig_winch_handler(int);
+void	sigwinch_handler(int);
+void	sigint_handler(int);
 void	redraw(void);
 
 

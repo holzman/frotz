@@ -30,6 +30,7 @@
 
 #include <unistd.h>
 #include <ctype.h>
+#include <signal.h>
 
 /* We will use our own private getopt functions. */
 #include "getopt.h"
@@ -43,9 +44,11 @@
 #include <termios.h>
 
 #include "ux_frotz.h"
+#include "../blorb/ux_blorb.h"
 
 f_setup_t f_setup;
 u_setup_t u_setup;
+z_header_t z_header;
 
 #define INFORMATION "\
 An interpreter for all Infocom and other Z-Machine games.\n\
@@ -55,9 +58,9 @@ Syntax: frotz [options] story-file\n\
   -a   watch attribute setting  \t -O   watch object locating\n\
   -A   watch attribute testing  \t -p   plain ASCII output only\n\
   -b # background color         \t -P   alter piracy opcode\n\
-  -c # context lines            \t -r # right margin\n\
-  -d   disable color            \t -q   quiet (disable sound effects)\n\
-  -e   enable sound             \t -Q   use old-style save format\n\
+  -c # context lines            \t -q   quiet (disable sound effects)\n\
+  -d   disable color            \t -Q   use old-style save format\n\
+  -e   enable sound             \t -r # right margin\n\
   -f # foreground color         \t -s # random number seed value\n\
   -F   Force color mode         \t -S # transscript width\n\
   -h # screen height            \t -t   set Tandy bit\n\
@@ -80,7 +83,6 @@ void os_fatal (const char *s)
 {
 
     if (u_setup.curses_active) {
-      /* Solaris 2.6's cc complains if the below cast is missing */
       os_display_string((zchar *)"\n\n");
       os_beep(BEEP_HIGH);
       os_set_text_style(BOLDFACE_STYLE);
@@ -101,10 +103,12 @@ void os_fatal (const char *s)
 
 }/* os_fatal */
 
+/*
 extern char script_name[];
 extern char command_name[];
 extern char save_name[];
 extern char auxilary_name[];
+*/
 
 /*
  * os_process_arguments
@@ -161,8 +165,11 @@ void os_process_arguments (int argc, char *argv[])
 
 /*
     if (signal(SIGWINCH, SIG_IGN) != SIG_IGN)
-	signal(SIGWINCH, sig_winch_handler);
+	signal(SIGWINCH, sigwinch_handler);
 */
+
+    if (signal(SIGINT, SIG_IGN) != SIG_IGN)
+	signal(SIGINT, sigint_handler);
 
     /* First check for a "$HOME/.frotzrc". */
     /* If not found, look for CONFIG_DIR/frotz.conf */
@@ -187,7 +194,9 @@ void os_process_arguments (int argc, char *argv[])
 	  case 'a': f_setup.attribute_assignment = 1; break;
 	  case 'A': f_setup.attribute_testing = 1; break;
 
-	  case 'b': u_setup.background_color = atoi(optarg);
+	  case 'b': u_setup.background_color = getcolor(optarg);
+		u_setup.force_color = 1;
+		u_setup.disable_color = 0;
 		if ((u_setup.background_color < 2) ||
 		    (u_setup.background_color > 9))
 		  u_setup.background_color = -1;
@@ -195,10 +204,12 @@ void os_process_arguments (int argc, char *argv[])
 	  case 'c': f_setup.context_lines = atoi(optarg); break;
 	  case 'd': u_setup.disable_color = 1; break;
 	  case 'e': f_setup.sound = 1; break;
-	  case 'f': u_setup.foreground_color = atoi(optarg);
-	            if ((u_setup.foreground_color < 2) ||
-			(u_setup.foreground_color > 9))
-		      u_setup.foreground_color = -1;
+	  case 'f': u_setup.foreground_color = getcolor(optarg);
+		u_setup.force_color = 1;
+		u_setup.disable_color = 0;
+		if ((u_setup.foreground_color < 2) ||
+		    (u_setup.foreground_color > 9))
+			u_setup.foreground_color = -1;
 		    break;
 	  case 'F': u_setup.force_color = 1;
 		    u_setup.disable_color = 0;
@@ -232,6 +243,8 @@ void os_process_arguments (int argc, char *argv[])
 	printf("FROTZ V%s\t", VERSION);
 #ifdef OSS_SOUND
 	printf("oss sound driver, ");
+#else
+	printf("no sound driver, ");
 #endif
 
 #ifdef USE_NCURSES
@@ -257,38 +270,61 @@ void os_process_arguments (int argc, char *argv[])
 
     /* Save the story file name */
 
-    story_name = malloc(FILENAME_MAX + 1);
-    strcpy(story_name, argv[optind]);
 
-    /* Strip path off the story file name */
+    f_setup.story_file = strdup(argv[optind]);
+    f_setup.story_name = strdup((char *)basename(argv[optind]));
 
-    p = (char *)story_name;
+    /* Now strip off the extension. */
+    p = rindex(f_setup.story_name, '.');
 
-    for (i = 0; story_name[i] != 0; i++)
-        if (story_name[i] == '/')
-          p = (char *)story_name + i + 1;
+    /* Get rid of extensions with 1, 2, 3, or 4 character extensions. */
+    /* More than that, there might be something weird going on */
+    /*	which is not our concern. */
+    if (p != NULL) {
+    	if (strlen(p) >= 2 && strlen(p) <= 5) {
+		*p = '\0';	/* extension removed */
+    	}
+    }
 
-    for (i = 0; p[i] != '\0'; i++)
-	semi_stripped_story_name[i] = p[i];
-    semi_stripped_story_name[i] = '\0';
-
-    for (i = 0; p[i] != '\0' && p[i] != '.'; i++)
-        stripped_story_name[i] = p[i];
-    stripped_story_name[i] = '\0';
+    f_setup.story_path = strdup((char *)dirname(argv[optind]));
 
     /* Create nice default file names */
 
-    strcpy (script_name, stripped_story_name);
-    strcpy (command_name, stripped_story_name);
-    strcpy (save_name, stripped_story_name);
-    strcpy (auxilary_name, stripped_story_name);
+    u_setup.blorb_name = malloc(strlen(f_setup.story_name) * sizeof(char) + 5);
+    strncpy(u_setup.blorb_name, f_setup.story_name,
+		strlen(f_setup.story_name) +1);
+    strncat(u_setup.blorb_name, EXT_BLORB, strlen(EXT_BLORB));
 
-    /* Don't forget the extensions */
+    u_setup.blorb_file = malloc(strlen(f_setup.story_path) *
+		sizeof(char) + strlen(u_setup.blorb_name) * sizeof(char) + 4);
+    strncpy(u_setup.blorb_file, f_setup.story_path, strlen(f_setup.story_path));
+    strncat(u_setup.blorb_file, "/", 1);
+    strncat(u_setup.blorb_file, u_setup.blorb_name,
+		strlen(u_setup.blorb_name) + 1);
 
-    strcat (script_name, ".scr");
-    strcat (command_name, ".rec");
-    strcat (save_name, ".sav");
-    strcat (auxilary_name, ".aux");
+    f_setup.script_name = malloc(strlen(f_setup.story_name) * sizeof(char) + 5);
+    strncpy(f_setup.script_name, f_setup.story_name, strlen(f_setup.story_name));
+    strncat(f_setup.script_name, EXT_SCRIPT, strlen(EXT_SCRIPT));
+
+    f_setup.command_name = malloc(strlen(f_setup.story_name) * sizeof(char) + 5);
+    strncpy(f_setup.command_name, f_setup.story_name, strlen(f_setup.story_name));
+    strncat(f_setup.command_name, EXT_COMMAND, strlen(EXT_COMMAND));
+
+    f_setup.save_name = malloc(strlen(f_setup.story_name) * sizeof(char) + 5);
+    strncpy(f_setup.save_name, f_setup.story_name, strlen(f_setup.story_name));
+    strncat(f_setup.save_name, EXT_SAVE, strlen(EXT_SAVE));
+
+    f_setup.aux_name = malloc(strlen(f_setup.story_name) * sizeof(char) + 5);
+    strncpy(f_setup.aux_name, f_setup.story_name, strlen(f_setup.story_name));
+    strncat(f_setup.aux_name, EXT_AUX, strlen(EXT_AUX));
+
+
+    switch (ux_init_blorb()) {
+	case bb_err_Format:	printf("Blorb file loaded, but unable to build map.\n\n");
+				break;
+    }
+
+
 
 }/* os_process_arguments */
 
@@ -299,19 +335,19 @@ void os_process_arguments (int argc, char *argv[])
  * (mouse, sound board). Set various OS depending story file header
  * entries:
  *
- *     h_config (aka flags 1)
- *     h_flags (aka flags 2)
- *     h_screen_cols (aka screen width in characters)
- *     h_screen_rows (aka screen height in lines)
- *     h_screen_width
- *     h_screen_height
- *     h_font_height (defaults to 1)
- *     h_font_width (defaults to 1)
- *     h_default_foreground
- *     h_default_background
- *     h_interpreter_number
- *     h_interpreter_version
- *     h_user_name (optional; not used by any game)
+ *     z_header.h_config (aka flags 1)
+ *     z_header.h_flags (aka flags 2)
+ *     z_header.h_screen_cols (aka screen width in characters)
+ *     z_header.h_screen_rows (aka screen height in lines)
+ *     z_header.h_screen_width
+ *     z_header.h_screen_height
+ *     z_header.h_font_height (defaults to 1)
+ *     z_header.h_font_width (defaults to 1)
+ *     z_header.h_default_foreground
+ *     z_header.h_default_background
+ *     z_header.h_interpreter_number
+ *     z_header.h_interpreter_version
+ *     z_header.h_user_name (optional; not used by any game)
  *
  * Finally, set reserve_mem to the amount of memory (in bytes) that
  * should not be used for multiple undo and reserved for later use.
@@ -325,8 +361,13 @@ void os_init_screen (void)
 {
 
     /*trace(TRACE_CALLS);*/
+
+    if (initscr() == NULL) {	/* Set up curses */
+	os_fatal("Unable to initialize curses. Maybe your $TERM setting is bad.");
+	exit(1);
+    }
     u_setup.curses_active = 1;	/* Let os_fatal know curses is running */
-    initscr();			/* Set up curses */
+
     cbreak();			/* Raw input mode, no line processing */
     noecho();			/* No input echo */
     nonl();			/* No newline translation */
@@ -334,64 +375,67 @@ void os_init_screen (void)
     keypad(stdscr, TRUE);	/* Enable the keypad and function keys */
     scrollok(stdscr, FALSE);	/* No scrolling unless explicitly asked for */
 
-    if (h_version == V3 && u_setup.tandy_bit != 0)
-        h_config |= CONFIG_TANDY;
 
-    if (h_version == V3)
-	h_config |= CONFIG_SPLITSCREEN;
+    if (z_header.h_version == V3 && u_setup.tandy_bit != 0)
+        z_header.h_config |= CONFIG_TANDY;
 
-    if (h_version >= V4)
-	h_config |= CONFIG_BOLDFACE | CONFIG_EMPHASIS | CONFIG_FIXED | CONFIG_TIMEDINPUT;
+    if (z_header.h_version == V3)
+	z_header.h_config |= CONFIG_SPLITSCREEN;
 
-    if (h_version >= V5)
-      h_flags &= ~(GRAPHICS_FLAG | MOUSE_FLAG | MENU_FLAG);
+    if (z_header.h_version >= V4)
+	z_header.h_config |= CONFIG_BOLDFACE | CONFIG_EMPHASIS |
+				CONFIG_FIXED | CONFIG_TIMEDINPUT;
+
+    if (z_header.h_version >= V5)
+      z_header.h_flags &= ~(GRAPHICS_FLAG | MOUSE_FLAG | MENU_FLAG);
 
 #ifdef NO_SOUND
-    if (h_version >= V5)
-      h_flags &= ~SOUND_FLAG;
+    if (z_header.h_version >= V5)
+      z_header.h_flags &= ~SOUND_FLAG;
 
-    if (h_version == V3)
-      h_flags &= ~OLD_SOUND_FLAG;
+    if (z_header.h_version == V3)
+      z_header.h_flags &= ~OLD_SOUND_FLAG;
 #else
-    if ((h_version >= 5) && (h_flags & SOUND_FLAG))
-	h_flags |= SOUND_FLAG;
+    if ((z_header.h_version >= 5) && (z_header.h_flags & SOUND_FLAG))
+	z_header.h_flags |= SOUND_FLAG;
 
-    if ((h_version == 3) && (h_flags & OLD_SOUND_FLAG))
-	h_flags |= OLD_SOUND_FLAG;
+    if ((z_header.h_version == 3) && (z_header.h_flags & OLD_SOUND_FLAG))
+	z_header.h_flags |= OLD_SOUND_FLAG;
 
-    if ((h_version == 6) && (f_setup.sound != 0))
-	h_config |= CONFIG_SOUND;
+    if ((z_header.h_version == 6) && (f_setup.sound != 0))
+	z_header.h_config |= CONFIG_SOUND;
 #endif
 
-    if (h_version >= V5 && (h_flags & UNDO_FLAG))
+    if (z_header.h_version >= V5 && (z_header.h_flags & UNDO_FLAG))
         if (f_setup.undo_slots == 0)
-            h_flags &= ~UNDO_FLAG;
+            z_header.h_flags &= ~UNDO_FLAG;
 
-    getmaxyx(stdscr, h_screen_rows, h_screen_cols);
+    getmaxyx(stdscr, z_header.h_screen_rows, z_header.h_screen_cols);
 
     if (u_setup.screen_height != -1)
-	h_screen_rows = u_setup.screen_height;
+	z_header.h_screen_rows = u_setup.screen_height;
     if (u_setup.screen_width != -1)
-	h_screen_cols = u_setup.screen_width;
+	z_header.h_screen_cols = u_setup.screen_width;
 
-    h_screen_width = h_screen_cols;
-    h_screen_height = h_screen_rows;
+    z_header.h_screen_width = z_header.h_screen_cols;
+    z_header.h_screen_height = z_header.h_screen_rows;
 
-    h_font_width = 1;
-    h_font_height = 1;
+    z_header.h_font_width = 1;
+    z_header.h_font_height = 1;
 
     /* Must be after screen dimensions are computed.  */
-    if (h_version == V6) {
+    if (z_header.h_version == V6) {
       if (unix_init_pictures())
-	h_config |= CONFIG_PICTURES;
+	z_header.h_config |= CONFIG_PICTURES;
       else
-	h_flags &= ~GRAPHICS_FLAG;
+	z_header.h_flags &= ~GRAPHICS_FLAG;
     }
 
     /* Use the ms-dos interpreter number for v6, because that's the
      * kind of graphics files we understand.  Otherwise, use DEC.  */
-    h_interpreter_number = h_version == 6 ? INTERP_MSDOS : INTERP_DEC_20;
-    h_interpreter_version = 'F';
+    z_header.h_interpreter_number = z_header.h_version == 6 ?
+		INTERP_MSDOS : INTERP_DEC_20;
+    z_header.h_interpreter_version = 'F';
 
 #ifdef COLOR_SUPPORT
     /* Enable colors if the terminal supports them, the user did not
@@ -400,7 +444,8 @@ void os_init_screen (void)
      */
     u_setup.color_enabled = (has_colors()
 			&& !u_setup.disable_color
-			&& (((h_version >= 5) && (h_flags & COLOUR_FLAG))
+			&& (((z_header.h_version >= 5)
+			  && (z_header.h_flags & COLOUR_FLAG))
 			  || (u_setup.foreground_color != -1)
 			  || (u_setup.background_color != -1)));
 
@@ -412,25 +457,25 @@ void os_init_screen (void)
 	u_setup.color_enabled = TRUE;
 
     if (u_setup.color_enabled) {
-        h_config |= CONFIG_COLOUR;
-        h_flags |= COLOUR_FLAG; /* FIXME: beyond zork handling? */
+        z_header.h_config |= CONFIG_COLOUR;
+        z_header.h_flags |= COLOUR_FLAG; /* FIXME: beyond zork handling? */
         start_color();
-	h_default_foreground =
+	z_header.h_default_foreground =
 	  (u_setup.foreground_color == -1)
 	  	? FOREGROUND_DEF : u_setup.foreground_color;
-	h_default_background =
+	z_header.h_default_background =
 	  (u_setup.background_color ==-1)
 		? BACKGROUND_DEF : u_setup.background_color;
     } else
-#endif
+#endif /* COLOR_SUPPORT */
     {
 	/* Set these per spec 8.3.2. */
-	h_default_foreground = WHITE_COLOUR;
-	h_default_background = BLACK_COLOUR;
-	if (h_flags & COLOUR_FLAG) h_flags &= ~COLOUR_FLAG;
+	z_header.h_default_foreground = WHITE_COLOUR;
+	z_header.h_default_background = BLACK_COLOUR;
+	if (z_header.h_flags & COLOUR_FLAG) z_header.h_flags &= ~COLOUR_FLAG;
     }
-    os_set_colour(h_default_foreground, h_default_background);
-    os_erase_area(1, 1, h_screen_rows, h_screen_cols);
+    os_set_colour(z_header.h_default_foreground, z_header.h_default_background);
+    os_erase_area(1, 1, z_header.h_screen_rows, z_header.h_screen_cols);
 }/* os_init_screen */
 
 /*
@@ -445,7 +490,7 @@ void os_reset_screen (void)
 
     os_stop_sample(0);
     os_set_text_style(0);
-    os_display_string((zchar *) "[Hit any key to exit.]");
+    os_display_string((zchar *) "[Hit any key to exit.] ");
     os_read_key(0, FALSE);
     scrollok(stdscr, TRUE); scroll(stdscr);
     refresh(); endwin();
@@ -495,7 +540,6 @@ int os_random_seed (void)
  * defined, search INFOCOM_PATH.
  *
  */
-
 FILE *os_path_open(const char *name, const char *mode)
 {
 	FILE *fp;
@@ -504,6 +548,7 @@ FILE *os_path_open(const char *name, const char *mode)
 
 	/* Let's see if the file is in the currect directory */
 	/* or if the user gave us a full path. */
+
 	if ((fp = fopen(name, mode))) {
 		return fp;
 	}
@@ -511,8 +556,8 @@ FILE *os_path_open(const char *name, const char *mode)
 	/* If zcodepath is defined in a config file, check that path. */
 	/* If we find the file a match in that path, great. */
 	/* Otherwise, check some environmental variables. */
-	if (option_zcode_path != NULL) {
-		if ((fp = pathopen(name, option_zcode_path, mode, buf)) != NULL) {
+	if (f_setup.zcode_path != NULL) {
+		if ((fp = pathopen(name, f_setup.zcode_path, mode, buf)) != NULL) {
 			strncpy(story_name, buf, FILENAME_MAX);
 			return fp;
 		}
@@ -528,6 +573,35 @@ FILE *os_path_open(const char *name, const char *mode)
 	}
 	return NULL;	/* give up */
 } /* os_path_open() */
+
+
+/*
+ * os_load_story
+ *
+ * This is different from os_path_open() because we need to see if the
+ * story file is actually a chunk inside a blorb file.  Right now we're
+ * looking only at the exact path we're given on the command line.
+ *
+ * Open a file in the current directory.  If this fails, then search the
+ * directories in the ZCODE_PATH environmental variable.  If that's not
+ * defined, search INFOCOM_PATH.
+ *
+ */
+FILE *os_load_story(void)
+{
+	FILE *fp;
+
+	/* Did we build a valid blorb map? */
+	if (u_setup.exec_in_blorb) {
+		fp = fopen(u_setup.blorb_file, "rb");
+		fseek(fp, blorb_res.data.startpos, SEEK_SET);
+	} else {
+		fp = fopen(f_setup.story_file, "rb");
+	}
+
+	return fp;
+}
+
 
 /*
  * pathopen
@@ -712,8 +786,8 @@ int getconfig(char *configfile)
 		/* now for really stringtype variable */
 
 		else if (strcmp(varname, "zcode_path") == 0) {
-			option_zcode_path = malloc(strlen(value) * sizeof(char) + 1);
-			strncpy(option_zcode_path, value, strlen(value) * sizeof(char));
+			f_setup.zcode_path = malloc(strlen(value) * sizeof(char) + 1);
+			strncpy(f_setup.zcode_path, value, strlen(value) * sizeof(char));
 		}
 
 		/* The big nasty if-else thingy is finished */
@@ -780,7 +854,6 @@ int getcolor(char *value)
 		return CYAN_COLOUR;
 	if (strcmp(value, "white") == 0)
 		return WHITE_COLOUR;
-
 	if (strcmp(value, "purple") == 0)
 		return MAGENTA_COLOUR;
 	if (strcmp(value, "violet") == 0)
@@ -833,7 +906,7 @@ int geterrmode(char *value)
  *
  */
 
-void sig_winch_handler(int sig)
+void sigwinch_handler(int sig)
 {
 /*
 There are some significant problems involved in getting resizes to work
@@ -843,13 +916,21 @@ explaination for this.  Because of this trouble, this function currently
 does nothing.
 */
 
+}
+
 /*
-	signal(sig, SIG_DFL);
-	signal(sig, SIG_IGN);
+ * Sometimes the screen will be left in a weird state if the following
+ * is not done.
+ *
+ */
+void sigint_handler(int dummy)
+{
+	signal(SIGINT, sigint_handler);
 
+	scrollok(stdscr, TRUE); scroll(stdscr);
+	refresh(); endwin();
 
-	signal(SIGWINCH, sig_winch_handler);
-*/
+	exit(1);
 }
 
 void redraw(void)
@@ -857,10 +938,14 @@ void redraw(void)
 	/* not implemented */
 }
 
-
+/*
+ * void os_init_setup(void)
+ *
+ * Initialize the f_setup and u_setup structs to some defaults.
+ *
+ */
 void os_init_setup(void)
 {
-
 	f_setup.attribute_assignment = 0;
 	f_setup.attribute_testing = 0;
 	f_setup.context_lines = 0;
@@ -876,6 +961,10 @@ void os_init_setup(void)
 	f_setup.save_quetzal = 1;
 	f_setup.sound = 1;
 	f_setup.err_report_mode = ERR_DEFAULT_REPORT_MODE;
+
+
+	u_setup.use_blorb = 0;
+	u_setup.exec_in_blorb = 0;
 
 	u_setup.disable_color = 0;
 	u_setup.force_color = 0;
@@ -900,3 +989,50 @@ void os_init_setup(void)
 
 }
 
+
+
+int ux_init_blorb(void)
+{
+	FILE	*blorbfile;
+
+/*
+	printf("f_setup.story_file == %s\n", f_setup.story_file);
+	printf("f_setup.story_path == %s\n", f_setup.story_path);
+	printf("f_setup.story_name == %s\n\n", f_setup.story_name);
+	printf("u_setup.blorb_name == %s\n", u_setup.blorb_name);
+	printf("u_setup.blorb_file == %s\n\n", u_setup.blorb_file);
+*/
+
+	/* If the filename given on the command line is the same as our
+	 * computed blorb filename, then we will assume the executable
+	 * is contained
+	 * in the blorb file.
+	 */
+
+	if (strncmp((char *)basename(f_setup.story_file),
+			(char *)basename(u_setup.blorb_file),
+			55) == 0) {
+
+		if ((blorbfile = fopen(u_setup.blorb_file, "rb")) == NULL)
+			return bb_err_Read;
+
+		blorb_err = bb_create_map(blorbfile, &blorb_map);
+		if (blorb_err != bb_err_None)
+			return bb_err_Format;
+
+		/*
+		 * Now we need to locate the EXEC chunk within the blorb file
+		 * and present it to the rest of the program as a file stream.
+		 *
+		 */
+
+		blorb_err = bb_load_chunk_by_type(blorb_map,
+				bb_method_FilePos, &blorb_res,
+				bb_make_id('Z','C','O','D'), 0);
+
+		if (blorb_err == bb_err_None) {
+			u_setup.exec_in_blorb = 1;
+			u_setup.use_blorb = 1;
+		}
+	}
+}

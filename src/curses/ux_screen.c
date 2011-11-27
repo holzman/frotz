@@ -45,8 +45,8 @@ void os_erase_area (int top, int left, int bottom, int right)
     int y, x, i, j;
 
     /* Catch the most common situation and do things the easy way */
-    if ((top == 1) && (bottom == h_screen_rows) &&
-	(left == 1) && (right == h_screen_cols)) {
+    if ((top == 1) && (bottom == z_header.h_screen_rows) &&
+	(left == 1) && (right == z_header.h_screen_cols)) {
 #ifdef COLOR_SUPPORT
       /* Only set the curses background when doing an erase, so it won't
        * interfere with the copying we do in os_scroll_area.
@@ -86,7 +86,7 @@ void os_scroll_area (int top, int left, int bottom, int right, int units)
 {
   top--; left--; bottom--; right--;
 
-  if ((left == 0) && (right == h_screen_cols - 1)) {
+  if ((left == 0) && (right == z_header.h_screen_cols - 1)) {
     static int old_scroll_top = 0;
     static int old_scroll_bottom = 0;
 

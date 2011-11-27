@@ -157,10 +157,20 @@ static int unix_read_char(int extkeys)
  * ZC_TIME_OUT.
  *
  */
+
+#ifdef __Linux__
+	case 0:
+		continue;
+#else
+
 #ifdef USE_NCURSES_H
 	case 0:
 		continue;
 #endif /* USE_NCURSES_H */
+#endif /* __Linux__ */
+
+
+
 
 	/* Screen decluttering. */
 	case MOD_CTRL ^ 'L': case MOD_CTRL ^ 'R':

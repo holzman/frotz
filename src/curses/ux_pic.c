@@ -132,9 +132,9 @@ bool unix_init_pictures (void)
       pict_info[i].orig_width = lookupw(p, PIC_HEADER_WIDTH);
 
       pict_info[i].height = round_div(pict_info[i].orig_height *
-		h_screen_rows, y_scale);
+		z_header.h_screen_rows, y_scale);
       pict_info[i].width = round_div(pict_info[i].orig_width *
-		h_screen_cols, x_scale);
+		z_header.h_screen_cols, x_scale);
 
       /* Don't let dimensions get rounded to nothing. */
       if (pict_info[i].orig_height && !pict_info[i].height)
@@ -195,7 +195,7 @@ int os_picture_data(int num, int *height, int *width)
  */
 static void safe_mvaddch(int y, int x, int ch)
 {
-	if ((y < h_screen_rows) && (x < h_screen_cols))
+	if ((y < z_header.h_screen_rows) && (x < z_header.h_screen_cols))
 		mvaddch(y, x, ch);
 }
 
@@ -205,10 +205,10 @@ static void safe_mvaddch(int y, int x, int ch)
  */
 static void safe_scrnset(int y, int x, int ch, int n)
 {
-	if ((y < h_screen_rows) && (x < h_screen_cols)) {
+	if ((y < z_header.h_screen_rows) && (x < z_header.h_screen_cols)) {
 		move(y, x);
-		if (x + n > h_screen_cols)
-			n = h_screen_cols - x;
+		if (x + n > z_header.h_screen_cols)
+			n = z_header.h_screen_cols - x;
 		while (n--)
 			addch(ch);
 	}
@@ -344,6 +344,7 @@ int os_peek_colour (void)
     return 0;
 #endif /* COLOR_SUPPORT */
   } else {
-    return (inch() & A_REVERSE) ? h_default_foreground : h_default_background;
+    return (inch() & A_REVERSE) ? z_header.h_default_foreground :
+			z_header.h_default_background;
   }
 }
