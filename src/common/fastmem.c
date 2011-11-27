@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <mcheck.h>
 #include "frotz.h"
 
 #ifdef MSDOS_16BIT
@@ -58,6 +59,7 @@ extern void script_open (void);
 extern void script_close (void);
 
 extern FILE *os_path_open (const char *, const char *);
+extern FILE *os_load_story (void);
 
 extern zword save_quetzal (FILE *, FILE *);
 extern zword restore_quetzal (FILE *, FILE *);
@@ -69,11 +71,16 @@ extern void (*op1_opcodes[]) (void);
 extern void (*op2_opcodes[]) (void);
 extern void (*var_opcodes[]) (void);
 
+/*
 char save_name[MAX_FILE_NAME + 1] = DEFAULT_SAVE_NAME;
 char auxilary_name[MAX_FILE_NAME + 1] = DEFAULT_AUXILARY_NAME;
+*/
 
-zbyte far *zmp = NULL;
-zbyte far *pcp = NULL;
+//zbyte far *zmp = NULL;
+//zbyte far *pcp = NULL;
+
+zbyte *zmp = NULL;
+zbyte *pcp = NULL;
 
 static FILE *story_fp = NULL;
 
@@ -113,10 +120,10 @@ zword get_header_extension (int entry)
     zword addr;
     zword val;
 
-    if (h_extension_table == 0 || entry > hx_table_size)
+    if (z_header.h_extension_table == 0 || entry > hx_table_size)
 	return 0;
 
-    addr = h_extension_table + 2 * entry;
+    addr = z_header.h_extension_table + 2 * entry;
     LOW_WORD (addr, val)
 
     return val;
@@ -134,13 +141,70 @@ void set_header_extension (int entry, zword val)
 {
     zword addr;
 
-    if (h_extension_table == 0 || entry > hx_table_size)
+    if (z_header.h_extension_table == 0 || entry > hx_table_size)
 	return;
 
-    addr = h_extension_table + 2 * entry;
+    addr = z_header.h_extension_table + 2 * entry;
     SET_WORD (addr, val)
 
 }/* set_header_extension */
+
+/* init_header
+ *
+ * Blank out all header fields which hold information about the interpreter.
+ *
+ */
+void init_header(void)
+{
+	z_header.h_version = 0;
+	z_header.h_config = 0;
+	z_header.h_release = 0;
+	z_header.h_resident_size = 0;
+	z_header.h_start_pc = 0;
+	z_header.h_dictionary = 0;
+	z_header.h_objects = 0;
+	z_header.h_globals = 0;
+	z_header.h_dynamic_size = 0;
+	z_header.h_flags = 0;
+	z_header.h_serial[0] = 0;
+	z_header.h_serial[1] = 0;
+	z_header.h_serial[2] = 0;
+	z_header.h_serial[3] = 0;
+	z_header.h_serial[4] = 0;
+	z_header.h_serial[5] = 0;
+	z_header.h_abbreviations = 0;
+	z_header.h_file_size = 0;
+	z_header.h_checksum = 0;
+	z_header.h_interpreter_number = 0;
+	z_header.h_interpreter_version = 0;
+	z_header.h_screen_rows = 0;
+	z_header.h_screen_cols = 0;
+	z_header.h_screen_width = 0;
+	z_header.h_screen_height = 0;
+	z_header.h_font_height = 1;
+	z_header.h_font_width = 1;
+	z_header.h_functions_offset = 0;
+	z_header.h_strings_offset = 0;
+	z_header.h_default_background = 0;
+	z_header.h_default_foreground = 0;
+	z_header.h_terminating_keys = 0;
+	z_header.h_line_width = 0;
+	z_header.h_standard_high = 1;
+	z_header.h_standard_low = 0;
+	z_header.h_alphabet = 0;
+	z_header.h_extension_table = 0;
+	z_header.h_user_name[0] = 0;
+	z_header.h_user_name[1] = 0;
+	z_header.h_user_name[2] = 0;
+	z_header.h_user_name[3] = 0;
+	z_header.h_user_name[4] = 0;
+	z_header.h_user_name[5] = 0;
+	z_header.h_user_name[6] = 0;
+	z_header.h_user_name[7] = 0;
+}
+
+
+
 
 /*
  * restart_header
@@ -158,46 +222,46 @@ void restart_header (void)
 
     int i;
 
-    SET_BYTE (H_CONFIG, h_config)
-    SET_WORD (H_FLAGS, h_flags)
+    SET_BYTE (H_CONFIG, z_header.h_config)
+    SET_WORD (H_FLAGS, z_header.h_flags)
 
-    if (h_version >= V4) {
-	SET_BYTE (H_INTERPRETER_NUMBER, h_interpreter_number)
-	SET_BYTE (H_INTERPRETER_VERSION, h_interpreter_version)
-	SET_BYTE (H_SCREEN_ROWS, h_screen_rows)
-	SET_BYTE (H_SCREEN_COLS, h_screen_cols)
+    if (z_header.h_version >= V4) {
+	SET_BYTE (H_INTERPRETER_NUMBER, z_header.h_interpreter_number)
+	SET_BYTE (H_INTERPRETER_VERSION, z_header.h_interpreter_version)
+	SET_BYTE (H_SCREEN_ROWS, z_header.h_screen_rows)
+	SET_BYTE (H_SCREEN_COLS, z_header.h_screen_cols)
     }
 
     /* It's less trouble to use font size 1x1 for V5 games, especially
        because of a bug in the unreleased German version of "Zork 1" */
 
-    if (h_version != V6) {
-	screen_x_size = (zword) h_screen_cols;
-	screen_y_size = (zword) h_screen_rows;
+    if (z_header.h_version != V6) {
+	screen_x_size = (zword) z_header.h_screen_cols;
+	screen_y_size = (zword) z_header.h_screen_rows;
 	font_x_size = 1;
 	font_y_size = 1;
     } else {
-	screen_x_size = h_screen_width;
-	screen_y_size = h_screen_height;
-	font_x_size = h_font_width;
-	font_y_size = h_font_height;
+	screen_x_size = z_header.h_screen_width;
+	screen_y_size = z_header.h_screen_height;
+	font_x_size = z_header.h_font_width;
+	font_y_size = z_header.h_font_height;
     }
 
-    if (h_version >= V5) {
+    if (z_header.h_version >= V5) {
 	SET_WORD (H_SCREEN_WIDTH, screen_x_size)
 	SET_WORD (H_SCREEN_HEIGHT, screen_y_size)
 	SET_BYTE (H_FONT_HEIGHT, font_y_size)
 	SET_BYTE (H_FONT_WIDTH, font_x_size)
-	SET_BYTE (H_DEFAULT_BACKGROUND, h_default_background)
-	SET_BYTE (H_DEFAULT_FOREGROUND, h_default_foreground)
+	SET_BYTE (H_DEFAULT_BACKGROUND, z_header.h_default_background)
+	SET_BYTE (H_DEFAULT_FOREGROUND, z_header.h_default_foreground)
     }
 
-    if (h_version == V6)
+    if (z_header.h_version == V6)
 	for (i = 0; i < 8; i++)
-	    storeb ((zword) (H_USER_NAME + i), h_user_name[i]);
+	    storeb ((zword) (H_USER_NAME + i), z_header.h_user_name[i]);
 
-    SET_BYTE (H_STANDARD_HIGH, h_standard_high)
-    SET_BYTE (H_STANDARD_LOW, h_standard_low)
+    SET_BYTE (H_STANDARD_HIGH, z_header.h_standard_high)
+    SET_BYTE (H_STANDARD_LOW, z_header.h_standard_low)
 
 }/* restart_header */
 
@@ -249,11 +313,14 @@ void init_memory (void)
 
     /* Open story file */
 
-    if ((story_fp = os_path_open(story_name, "rb")) == NULL)
+/*    if ((story_fp = os_path_open(f_setup.story_file, "rb")) == NULL)
+	os_fatal ("Cannot open story file");
+*/
+
+    if ((story_fp = os_load_story()) == NULL)
 	os_fatal ("Cannot open story file");
 
     /* Allocate memory for story header */
-
     if ((zmp = (zbyte far *) malloc (64)) == NULL)
 	os_fatal ("Out of memory");
 
@@ -264,27 +331,27 @@ void init_memory (void)
 
     /* Copy header fields to global variables */
 
-    LOW_BYTE (H_VERSION, h_version)
+    LOW_BYTE (H_VERSION, z_header.h_version)
 
-    if (h_version < V1 || h_version > V8)
+    if (z_header.h_version < V1 || z_header.h_version > V8)
 	os_fatal ("Unknown Z-code version");
 
-    LOW_BYTE (H_CONFIG, h_config)
+    LOW_BYTE (H_CONFIG, z_header.h_config)
 
-    if (h_version == V3 && (h_config & CONFIG_BYTE_SWAPPED))
+    if (z_header.h_version == V3 && (z_header.h_config & CONFIG_BYTE_SWAPPED))
 	os_fatal ("Byte swapped story file");
 
-    LOW_WORD (H_RELEASE, h_release)
-    LOW_WORD (H_RESIDENT_SIZE, h_resident_size)
-    LOW_WORD (H_START_PC, h_start_pc)
-    LOW_WORD (H_DICTIONARY, h_dictionary)
-    LOW_WORD (H_OBJECTS, h_objects)
-    LOW_WORD (H_GLOBALS, h_globals)
-    LOW_WORD (H_DYNAMIC_SIZE, h_dynamic_size)
-    LOW_WORD (H_FLAGS, h_flags)
+    LOW_WORD (H_RELEASE, z_header.h_release)
+    LOW_WORD (H_RESIDENT_SIZE, z_header.h_resident_size)
+    LOW_WORD (H_START_PC, z_header.h_start_pc)
+    LOW_WORD (H_DICTIONARY, z_header.h_dictionary)
+    LOW_WORD (H_OBJECTS, z_header.h_objects)
+    LOW_WORD (H_GLOBALS, z_header.h_globals)
+    LOW_WORD (H_DYNAMIC_SIZE, z_header.h_dynamic_size)
+    LOW_WORD (H_FLAGS, z_header.h_flags)
 
     for (i = 0, addr = H_SERIAL; i < 6; i++, addr++)
-	LOW_BYTE (addr, h_serial[i])
+	LOW_BYTE (addr, z_header.h_serial[i])
 
     /* Auto-detect buggy story files that need special fixes */
 
@@ -292,10 +359,10 @@ void init_memory (void)
 
     for (i = 0; records[i].story_id != UNKNOWN; i++) {
 
-	if (h_release == records[i].release) {
+	if (z_header.h_release == records[i].release) {
 
 	    for (j = 0; j < 6; j++)
-		if (h_serial[j] != records[i].serial[j])
+		if (z_header.h_serial[j] != records[i].serial[j])
 		    goto no_match;
 
 	    story_id = records[i].story_id;
@@ -306,18 +373,18 @@ void init_memory (void)
 
     }
 
-    LOW_WORD (H_ABBREVIATIONS, h_abbreviations)
-    LOW_WORD (H_FILE_SIZE, h_file_size)
+    LOW_WORD (H_ABBREVIATIONS, z_header.h_abbreviations)
+    LOW_WORD (H_FILE_SIZE, z_header.h_file_size)
 
     /* Calculate story file size in bytes */
 
-    if (h_file_size != 0) {
+    if (z_header.h_file_size != 0) {
 
-	story_size = (long) 2 * h_file_size;
+	story_size = (long) 2 * z_header.h_file_size;
 
-	if (h_version >= V4)
+	if (z_header.h_version >= V4)
 	    story_size *= 2;
-	if (h_version >= V6)
+	if (z_header.h_version >= V6)
 	    story_size *= 2;
 
     } else {		/* some old games lack the file size entry */
@@ -328,21 +395,21 @@ void init_memory (void)
 
     }
 
-    LOW_WORD (H_CHECKSUM, h_checksum)
-    LOW_WORD (H_ALPHABET, h_alphabet)
-    LOW_WORD (H_FUNCTIONS_OFFSET, h_functions_offset)
-    LOW_WORD (H_STRINGS_OFFSET, h_strings_offset)
-    LOW_WORD (H_TERMINATING_KEYS, h_terminating_keys)
-    LOW_WORD (H_EXTENSION_TABLE, h_extension_table)
+    LOW_WORD (H_CHECKSUM, z_header.h_checksum)
+    LOW_WORD (H_ALPHABET, z_header.h_alphabet)
+    LOW_WORD (H_FUNCTIONS_OFFSET, z_header.h_functions_offset)
+    LOW_WORD (H_STRINGS_OFFSET, z_header.h_strings_offset)
+    LOW_WORD (H_TERMINATING_KEYS, z_header.h_terminating_keys)
+    LOW_WORD (H_EXTENSION_TABLE, z_header.h_extension_table)
 
     /* Zork Zero Macintosh doesn't have the graphics flag set */
 
-    if (story_id == ZORK_ZERO && h_release == 296)
-	h_flags |= GRAPHICS_FLAG;
+    if (story_id == ZORK_ZERO && z_header.h_release == 296)
+	z_header.h_flags |= GRAPHICS_FLAG;
 
     /* Adjust opcode tables */
 
-    if (h_version <= V4) {
+    if (z_header.h_version <= V4) {
 	op0_opcodes[0x09] = z_pop;
 	op1_opcodes[0x0f] = z_not;
     } else {
@@ -351,7 +418,6 @@ void init_memory (void)
     }
 
     /* Allocate memory for story data */
-
     if ((zmp = (zbyte far *) realloc (zmp, story_size)) == NULL)
 	os_fatal ("Out of memory");
 
@@ -376,6 +442,7 @@ void init_memory (void)
     hx_table_size = get_header_extension (HX_TABLE_SIZE);
     hx_unicode_table = get_header_extension (HX_UNICODE_TABLE);
 
+
 }/* init_memory */
 
 /*
@@ -398,13 +465,13 @@ void init_undo (void)
 	    return;
     }
 
-    /* Allocate h_dynamic_size bytes for previous dynamic zmp state
-       + 1.5 h_dynamic_size for Quetzal diff + 2. */
-    undo_mem = malloc ((h_dynamic_size * 5) / 2 + 2);
+    /* Allocate z_header.h_dynamic_size bytes for previous dynamic zmp
+	state + 1.5 z_header.h_dynamic_size for Quetzal diff + 2. */
+    undo_mem = malloc ((z_header.h_dynamic_size * 5) / 2 + 2);
     if (undo_mem != NULL) {
 	prev_zmp = undo_mem;
-	undo_diff = undo_mem + h_dynamic_size;
-	memcpy (prev_zmp, zmp, h_dynamic_size);
+	undo_diff = undo_mem + z_header.h_dynamic_size;
+	memcpy (prev_zmp, zmp, z_header.h_dynamic_size);
     } else
 	f_setup.undo_slots = 0;
 
@@ -476,13 +543,13 @@ void reset_memory (void)
 void storeb (zword addr, zbyte value)
 {
 
-    if (addr >= h_dynamic_size)
+    if (addr >= z_header.h_dynamic_size)
 	runtime_error (ERR_STORE_RANGE);
 
     if (addr == H_FLAGS + 1) {	/* flags register is modified */
 
-	h_flags &= ~(SCRIPTING_FLAG | FIXED_FONT_FLAG);
-	h_flags |= value & (SCRIPTING_FLAG | FIXED_FONT_FLAG);
+	z_header.h_flags &= ~(SCRIPTING_FLAG | FIXED_FONT_FLAG);
+	z_header.h_flags |= value & (SCRIPTING_FLAG | FIXED_FONT_FLAG);
 
 	if (value & SCRIPTING_FLAG) {
 	    if (!ostream_script)
@@ -536,7 +603,8 @@ void z_restart (void)
 
 	fseek (story_fp, 0, SEEK_SET);
 
-	if (fread (zmp, 1, h_dynamic_size, story_fp) != h_dynamic_size)
+	if (fread (zmp, 1, z_header.h_dynamic_size, story_fp) !=
+		z_header.h_dynamic_size)
 	    os_fatal ("Story file read error");
 
     } else first_restart = FALSE;
@@ -547,12 +615,12 @@ void z_restart (void)
     sp = fp = stack + STACK_SIZE;
     frame_count = 0;
 
-    if (h_version != V6) {
+    if (z_header.h_version != V6) {
 
-	long pc = (long) h_start_pc;
+	long pc = (long) z_header.h_start_pc;
 	SET_PC (pc)
 
-    } else call (h_start_pc, 0, NULL, 0);
+    } else call (z_header.h_start_pc, 0, NULL, 0);
 
     os_restart_game (RESTART_END);
 
@@ -596,7 +664,7 @@ static void get_default_name (char *default_name, zword addr)
 	if (strchr (default_name, '.') == NULL)
 	    strcpy (default_name + i, ".AUX");
 
-    } else strcpy (default_name, auxilary_name);
+    } else strcpy (default_name, f_setup.aux_name);
 
 }/* get_default_name */
 
@@ -626,7 +694,7 @@ void z_restore (void)
 	if (os_read_file_name (new_name, default_name, FILE_LOAD_AUX) == 0)
 	    goto finished;
 
-	strcpy (auxilary_name, default_name);
+	strcpy (f_setup.aux_name, default_name);
 
 	/* Open auxilary file */
 
@@ -650,10 +718,10 @@ void z_restore (void)
 
 	/* Get the file name */
 
-	if (os_read_file_name (new_name, save_name, FILE_RESTORE) == 0)
+	if (os_read_file_name (new_name, f_setup.save_name, FILE_RESTORE) == 0)
 	    goto finished;
 
-	strcpy (save_name, new_name);
+	strcpy (f_setup.save_name, new_name);
 
 	/* Open game file */
 
@@ -674,7 +742,7 @@ void z_restore (void)
 
 	    /* Check the release number */
 
-	    if (release == h_release) {
+	    if (release == z_header.h_release) {
 
 		pc = (long) fgetc (gfp) << 16;
 		pc |= (unsigned) fgetc (gfp) << 8;
@@ -694,7 +762,7 @@ void z_restore (void)
 
 		fseek (story_fp, 0, SEEK_SET);
 
-		for (addr = 0; addr < h_dynamic_size; addr++) {
+		for (addr = 0; addr < z_header.h_dynamic_size; addr++) {
 		    int skip = fgetc (gfp);
 		    for (i = 0; i < skip; i++)
 			zmp[addr++] = fgetc (story_fp);
@@ -704,7 +772,8 @@ void z_restore (void)
 
 		/* Check for errors */
 
-		if (ferror (gfp) || ferror (story_fp) || addr != h_dynamic_size)
+		if (ferror (gfp) || ferror (story_fp) || addr !=
+					z_header.h_dynamic_size)
 		    success = -1;
 		else
 
@@ -726,7 +795,7 @@ void z_restore (void)
 		zbyte old_screen_cols;
 
 		/* In V3, reset the upper window. */
-		if (h_version == V3)
+		if (z_header.h_version == V3)
 		    split_window (0);
 
 		LOW_BYTE (H_SCREEN_ROWS, old_screen_rows);
@@ -740,9 +809,9 @@ void z_restore (void)
 		 * the screen sizes may vary a lot. Erasing the status window
 		 * seems to cover up most of the resulting badness.
 		 */
-		if (h_version > V3 && h_version != V6
-		    && (h_screen_rows != old_screen_rows
-		    || h_screen_cols != old_screen_cols))
+		if (z_header.h_version > V3 && z_header.h_version != V6
+		    && (z_header.h_screen_rows != old_screen_rows
+		    || z_header.h_screen_cols != old_screen_cols))
 		    erase_window (1);
 	    }
 	} else
@@ -751,7 +820,7 @@ void z_restore (void)
 
 finished:
 
-    if (h_version <= V3)
+    if (z_header.h_version <= V3)
 	branch (success);
     else
 	store (success);
@@ -859,7 +928,7 @@ int restore_undo (void)
 
     /* undo possible */
 
-    memcpy (zmp, prev_zmp, h_dynamic_size);
+    memcpy (zmp, prev_zmp, z_header.h_dynamic_size);
     SET_PC (curr_undo->pc)
     sp = stack + STACK_SIZE - curr_undo->stack_size;
     fp = stack + curr_undo->frame_offset;
@@ -916,7 +985,7 @@ void z_save (void)
 	if (os_read_file_name (new_name, default_name, FILE_SAVE_AUX) == 0)
 	    goto finished;
 
-	strcpy (auxilary_name, default_name);
+	strcpy (f_setup.aux_name, default_name);
 
 	/* Open auxilary file */
 
@@ -941,10 +1010,10 @@ void z_save (void)
 
 	/* Get the file name */
 
-	if (os_read_file_name (new_name, save_name, FILE_SAVE) == 0)
+	if (os_read_file_name (new_name, f_setup.save_name, FILE_SAVE) == 0)
 	    goto finished;
 
-	strcpy (save_name, new_name);
+	strcpy (f_setup.save_name, new_name);
 
 	/* Open game file */
 
@@ -956,10 +1025,10 @@ void z_save (void)
 	} else {
 	    /* Write game file */
 
-	    fputc ((int) hi (h_release), gfp);
-	    fputc ((int) lo (h_release), gfp);
-	    fputc ((int) hi (h_checksum), gfp);
-	    fputc ((int) lo (h_checksum), gfp);
+	    fputc ((int) hi (z_header.h_release), gfp);
+	    fputc ((int) lo (z_header.h_release), gfp);
+	    fputc ((int) hi (z_header.h_checksum), gfp);
+	    fputc ((int) lo (z_header.h_checksum), gfp);
 
 	    GET_PC (pc)
 
@@ -982,8 +1051,8 @@ void z_save (void)
 
 	    fseek (story_fp, 0, SEEK_SET);
 
-	    for (addr = 0, skip = 0; addr < h_dynamic_size; addr++)
-		if (zmp[addr] != fgetc (story_fp) || skip == 255 || addr + 1 == h_dynamic_size) {
+	    for (addr = 0, skip = 0; addr < z_header.h_dynamic_size; addr++)
+		if (zmp[addr] != fgetc (story_fp) || skip == 255 || addr + 1 == z_header.h_dynamic_size) {
 		    fputc (skip, gfp);
 		    fputc (zmp[addr], gfp);
 		    skip = 0;
@@ -1005,7 +1074,7 @@ void z_save (void)
 
 finished:
 
-    if (h_version <= V3)
+    if (z_header.h_version <= V3)
 	branch (success);
     else
 	store (success);
@@ -1044,7 +1113,7 @@ int save_undo (void)
     if (undo_count == f_setup.undo_slots)
 	free_undo (1);
 
-    diff_size = mem_diff (zmp, prev_zmp, h_dynamic_size, undo_diff);
+    diff_size = mem_diff (zmp, prev_zmp, z_header.h_dynamic_size, undo_diff);
     stack_size = stack + STACK_SIZE - sp;
     do {
 	p = malloc (sizeof (undo_t) + diff_size + stack_size * sizeof (*sp));
@@ -1110,6 +1179,6 @@ void z_verify (void)
 
     /* Branch if the checksums are equal */
 
-    branch (checksum == h_checksum);
+    branch (checksum == z_header.h_checksum);
 
 }/* z_verify */
