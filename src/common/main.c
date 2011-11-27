@@ -33,6 +33,7 @@
 #endif
 
 extern void interpret (void);
+extern void init_header(void);
 extern void init_memory (void);
 extern void init_undo (void);
 extern void reset_memory (void);
@@ -43,42 +44,6 @@ char *story_name = 0;
 
 enum story story_id = UNKNOWN;
 long story_size = 0;
-
-/* Story file header data */
-
-zbyte h_version = 0;
-zbyte h_config = 0;
-zword h_release = 0;
-zword h_resident_size = 0;
-zword h_start_pc = 0;
-zword h_dictionary = 0;
-zword h_objects = 0;
-zword h_globals = 0;
-zword h_dynamic_size = 0;
-zword h_flags = 0;
-zbyte h_serial[6] = { 0, 0, 0, 0, 0, 0 };
-zword h_abbreviations = 0;
-zword h_file_size = 0;
-zword h_checksum = 0;
-zbyte h_interpreter_number = 0;
-zbyte h_interpreter_version = 0;
-zbyte h_screen_rows = 0;
-zbyte h_screen_cols = 0;
-zword h_screen_width = 0;
-zword h_screen_height = 0;
-zbyte h_font_height = 1;
-zbyte h_font_width = 1;
-zword h_functions_offset = 0;
-zword h_strings_offset = 0;
-zbyte h_default_background = 0;
-zbyte h_default_foreground = 0;
-zword h_terminating_keys = 0;
-zword h_line_width = 0;
-zbyte h_standard_high = 1;
-zbyte h_standard_low = 0;
-zword h_alphabet = 0;
-zword h_extension_table = 0;
-zbyte h_user_name[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 zword hx_table_size = 0;
 zword hx_mouse_x = 0;
@@ -165,6 +130,7 @@ void z_piracy (void)
 
 int cdecl main (int argc, char *argv[])
 {
+    init_header();
 
     os_init_setup ();
 

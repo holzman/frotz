@@ -206,7 +206,7 @@ static void load_operand (zbyte type)
 	else if (variable < 16)
 	    value = *(fp - variable);
 	else {
-	    zword addr = h_globals + 2 * (variable - 16);
+	    zword addr = z_header.h_globals + 2 * (variable - 16);
 	    LOW_WORD (addr, value)
 	}
 
@@ -345,13 +345,13 @@ void call (zword routine, int argc, zword *args, int ct)
 
     /* Calculate byte address of routine */
 
-    if (h_version <= V3)
+    if (z_header.h_version <= V3)
 	pc = (long) routine << 1;
-    else if (h_version <= V5)
+    else if (z_header.h_version <= V5)
 	pc = (long) routine << 2;
-    else if (h_version <= V7)
-	pc = ((long) routine << 2) + ((long) h_functions_offset << 3);
-    else /* h_version == V8 */
+    else if (z_header.h_version <= V7)
+	pc = ((long) routine << 2) + ((long) z_header.h_functions_offset << 3);
+    else /* z_header.h_version == V8 */
 	pc = (long) routine << 3;
 
     if (pc >= story_size)
@@ -375,7 +375,7 @@ void call (zword routine, int argc, zword *args, int ct)
 
     for (i = 0; i < count; i++) {
 
-	if (h_version <= V4)		/* V1 to V4 games provide default */
+	if (z_header.h_version <= V4)	/* V1 to V4 games provide default */
 	    CODE_WORD (value)		/* values for all local variables */
 
 	*--sp = (zword) ((argc-- > 0) ? args[i] : value);
@@ -503,7 +503,7 @@ void store (zword value)
     else if (variable < 16)
 	*(fp - variable) = value;
     else {
-	zword addr = h_globals + 2 * (variable - 16);
+	zword addr = z_header.h_globals + 2 * (variable - 16);
 	SET_WORD (addr, value)
     }
 

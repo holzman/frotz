@@ -34,8 +34,10 @@ extern bool is_terminator (zchar);
 
 extern bool read_yes_or_no (const char *);
 
+/*
 char script_name[MAX_FILE_NAME + 1] = DEFAULT_SCRIPT_NAME;
 char command_name[MAX_FILE_NAME + 1] = DEFAULT_COMMAND_NAME;
+*/
 
 #ifdef __MSDOS__
 extern char latin1_to_ibm[];
@@ -67,24 +69,24 @@ void script_open (void)
 
     char new_name[MAX_FILE_NAME + 1];
 
-    h_flags &= ~SCRIPTING_FLAG;
+    z_header.h_flags &= ~SCRIPTING_FLAG;
 
-    if (h_version >= V5 || !script_valid) {
+    if (z_header.h_version >= V5 || !script_valid) {
 
-	if (!os_read_file_name (new_name, script_name, FILE_SCRIPT))
+	if (!os_read_file_name (new_name, f_setup.script_name, FILE_SCRIPT))
 	    goto done;
 
-	strcpy (script_name, new_name);
+	strcpy (f_setup.script_name, new_name);
 
     }
 
     /* Opening in "at" mode doesn't work for script_erase_input... */
 
-    if ((sfp = fopen (script_name, "r+t")) != NULL || (sfp = fopen (script_name, "w+t")) != NULL) {
+    if ((sfp = fopen (f_setup.script_name, "r+t")) != NULL || (sfp = fopen (f_setup.script_name, "w+t")) != NULL) {
 
 	fseek (sfp, 0, SEEK_END);
 
-	h_flags |= SCRIPTING_FLAG;
+	z_header.h_flags |= SCRIPTING_FLAG;
 
 	script_valid = TRUE;
 	ostream_script = TRUE;
@@ -95,7 +97,7 @@ void script_open (void)
 
 done:
 
-    SET_WORD (H_FLAGS, h_flags)
+    SET_WORD (H_FLAGS, z_header.h_flags)
 
 }/* script_open */
 
@@ -109,8 +111,8 @@ done:
 void script_close (void)
 {
 
-    h_flags &= ~SCRIPTING_FLAG;
-    SET_WORD (H_FLAGS, h_flags)
+    z_header.h_flags &= ~SCRIPTING_FLAG;
+    SET_WORD (H_FLAGS, z_header.h_flags)
 
     fclose (sfp); ostream_script = FALSE;
 
@@ -291,9 +293,9 @@ void record_open (void)
 {
     char new_name[MAX_FILE_NAME + 1];
 
-    if (os_read_file_name (new_name, command_name, FILE_RECORD)) {
+    if (os_read_file_name (new_name, f_setup.command_name, FILE_RECORD)) {
 
-	strcpy (command_name, new_name);
+	strcpy (f_setup.command_name, new_name);
 
 	if ((rfp = fopen (new_name, "wt")) != NULL)
 	    ostream_record = TRUE;
@@ -415,9 +417,9 @@ void replay_open (void)
 {
     char new_name[MAX_FILE_NAME + 1];
 
-    if (os_read_file_name (new_name, command_name, FILE_PLAYBACK)) {
+    if (os_read_file_name (new_name, f_setup.command_name, FILE_PLAYBACK)) {
 
-	strcpy (command_name, new_name);
+	strcpy (f_setup.command_name, new_name);
 
 	if ((pfp = fopen (new_name, "rt")) != NULL) {
 

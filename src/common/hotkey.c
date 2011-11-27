@@ -158,12 +158,12 @@ static bool hot_key_undo (void)
 
     if (restore_undo ()) {
 
-	if (h_version >= V5) {		/* for V5+ games we must */
+	if (z_header.h_version >= V5) {	/* for V5+ games we must */
 	    store (2);			/* store 2 (for success) */
 	    return TRUE;		/* and abort the input   */
 	}
 
-	if (h_version <= V3) {		/* for V3- games we must */
+	if (z_header.h_version <= V3) {	/* for V3- games we must */
 	    z_show_status ();		/* draw the status line  */
 	    return FALSE;		/* and continue input    */
 	}

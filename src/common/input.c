@@ -44,11 +44,11 @@ bool is_terminator (zchar key)
     if (key >= ZC_HKEY_MIN && key <= ZC_HKEY_MAX)
 	return TRUE;
 
-    if (h_terminating_keys != 0)
+    if (z_header.h_terminating_keys != 0)
 
 	if (key >= ZC_ARROW_MIN && key <= ZC_MENU_CLICK) {
 
-	    zword addr = h_terminating_keys;
+	    zword addr = z_header.h_terminating_keys;
 	    zbyte c;
 
 	    do {
@@ -183,7 +183,7 @@ void z_read (void)
 
     LOW_BYTE (addr, max)
 
-    if (h_version <= V4)
+    if (z_header.h_version <= V4)
 	max--;
 
     if (max >= INPUT_BUFFER_SIZE)
@@ -191,7 +191,7 @@ void z_read (void)
 
     /* Get initial input size */
 
-    if (h_version >= V5) {
+    if (z_header.h_version >= V5) {
 	addr++;
 	LOW_BYTE (addr, size)
     } else size = 0;
@@ -208,7 +208,7 @@ void z_read (void)
 
     /* Draw status line for V1 to V3 games */
 
-    if (h_version <= V3)
+    if (z_header.h_version <= V3)
 	z_show_status ();
 
     /* Read input from current input stream */
@@ -218,14 +218,14 @@ void z_read (void)
 	zargs[2],		/* timeout value   */
 	zargs[3],		/* timeout routine */
 	TRUE,	        	/* enable hot keys */
-	h_version == V6);	/* no script in V6 */
+	z_header.h_version == V6); /* no script in V6 */
 
     if (key == ZC_BAD)
 	return;
 
     /* Perform save_undo for V1 to V4 games */
 
-    if (h_version <= V4)
+    if (z_header.h_version <= V4)
 	save_undo ();
 
     /* Copy local buffer back to dynamic memory */
@@ -241,13 +241,13 @@ void z_read (void)
 
 	}
 
-	storeb ((zword) (zargs[0] + ((h_version <= V4) ? 1 : 2) + i), translate_to_zscii (buffer[i]));
+	storeb ((zword) (zargs[0] + ((z_header.h_version <= V4) ? 1 : 2) + i), translate_to_zscii (buffer[i]));
 
     }
 
     /* Add null character (V1-V4) or write input length into 2nd byte */
 
-    if (h_version <= V4)
+    if (z_header.h_version <= V4)
 	storeb ((zword) (zargs[0] + 1 + i), 0);
     else
 	storeb ((zword) (zargs[0] + 1), i);
@@ -259,7 +259,7 @@ void z_read (void)
 
     /* Store key */
 
-    if (h_version >= V5)
+    if (z_header.h_version >= V5)
 	store (translate_to_zscii (key));
 
 }/* z_read */
@@ -294,8 +294,14 @@ void z_read_char (void)
 
     /* Store key */
 
-    store (translate_to_zscii (key));
-
+    /* For timeouts, make sure translate_to_zscii() won't try to convert
+     * 0x00.  We should instead return 0x00 as is.
+     * Thanks to Peter Seebach.
+     */
+    if (key == 0)
+	store(key);
+    else
+	store (translate_to_zscii (key));
 }/* z_read_char */
 
 /*

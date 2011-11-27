@@ -156,6 +156,12 @@ void z_sound_effect (void)
     if (zargc < 3)
 	volume = 8;
 
+    if (number == 1 || number == 2) {
+	os_beep(number);
+	return;
+    }
+
+
     if (number >= 3 || number == 0) {
 
 	locked = TRUE;

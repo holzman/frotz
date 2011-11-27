@@ -177,7 +177,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 		progress |= GOT_HEADER;
 		if (currlen < 13
 		    || !read_word (svf, &tmpw))			return fatal;
-		if (tmpw != h_release)
+		if (tmpw != z_header.h_release)
 		    progress = GOT_ERROR;
 
 		for (i=H_SERIAL; i<H_SERIAL+6; ++i)
@@ -188,7 +188,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 		}
 
 		if (!read_word (svf, &tmpw))			return fatal;
-		if (tmpw != h_checksum)
+		if (tmpw != z_header.h_checksum)
 		    progress = GOT_ERROR;
 
 		if (progress & GOT_ERROR)
@@ -226,7 +226,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 		 * will be present in the file here. We skip this context, but
 		 * load the associated stack onto the stack proper...
 		 */
-		if (h_version != V6)
+		if (z_header.h_version != V6)
 		{
 		    if (currlen < 8)				return fatal;
 		    for (i=0; i<6; ++i)
@@ -341,7 +341,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 			    /* Copy story file to memory during the run. */
 			    --currlen;
 			    if ((x = get_c (svf)) == EOF)	return fatal;
-			    for (; x >= 0 && i<h_dynamic_size; --x, ++i)
+			    for (; x >= 0 && i<z_header.h_dynamic_size; --x, ++i)
 				if ((y = get_c (stf)) == EOF)	return fatal;
 				else
 				    zmp[i] = (zbyte) y;
@@ -353,7 +353,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 			    ++i;
 			}
 			/* Make sure we don't load too much. */
-			if (i > h_dynamic_size)
+			if (i > z_header.h_dynamic_size)
 			{
 			    print_string ("warning: `CMem' chunk too long!\n");
 			    for (; currlen > 1; --currlen)
@@ -362,7 +362,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 			}
 		    }
 		    /* If chunk is short, assume a run. */
-		    for (; i<h_dynamic_size; ++i)
+		    for (; i < z_header.h_dynamic_size; ++i)
 			if ((y = get_c (stf)) == EOF)		return fatal;
 			else
 			    zmp[i] = (zbyte) y;
@@ -376,7 +376,7 @@ zword restore_quetzal (FILE *svf, FILE *stf)
 		if (!(progress & GOT_MEMORY))	/* Don't complain if two. */
 		{
 		    /* Must be exactly the right size. */
-		    if (currlen == h_dynamic_size)
+		    if (currlen == z_header.h_dynamic_size)
 		    {
 			if (fread (zmp, currlen, 1, svf) == 1)
 			{
@@ -433,10 +433,10 @@ zword save_quetzal (FILE *svf, FILE *stf)
     /* Write `IFhd' chunk. */
     GET_PC (pc);
     if (!write_chnk (svf, ID_IFhd, 13))			return 0;
-    if (!write_word (svf, h_release))			return 0;
+    if (!write_word (svf, z_header.h_release))		return 0;
     for (i=H_SERIAL; i<H_SERIAL+6; ++i)
 	if (!write_byte (svf, zmp[i]))			return 0;
-    if (!write_word (svf, h_checksum))			return 0;
+    if (!write_word (svf, z_header.h_checksum))		return 0;
     if (!write_long (svf, pc << 8)) /* Includes pad. */	return 0;
 
     /* Write `CMem' chunk. */
@@ -444,7 +444,7 @@ zword save_quetzal (FILE *svf, FILE *stf)
     if (!write_chnk (svf, ID_CMem, 0))			return 0;
     (void) fseek (stf, 0, SEEK_SET);
     /* j holds current run length. */
-    for (i=0, j=0, cmemlen=0; i < h_dynamic_size; ++i)
+    for (i=0, j=0, cmemlen=0; i < z_header.h_dynamic_size; ++i)
     {
 	if ((c = get_c (stf)) == EOF)			return 0;
 	c ^= (int) zmp[i];
@@ -494,7 +494,7 @@ zword save_quetzal (FILE *svf, FILE *stf)
      * context. We write a faked stack frame (most fields zero) to cater for
      * this.
      */
-    if (h_version != V6)
+    if (z_header.h_version != V6)
     {
 	for (i=0; i<6; ++i)
 	    if (!write_byte (svf, 0))			return 0;
@@ -539,7 +539,7 @@ zword save_quetzal (FILE *svf, FILE *stf)
 	    || !write_word (svf, nstk))			return 0;
 
 	/* Write the variables and eval stack. */
-	for (j=0, ++p; j<nvars+nstk; ++j, --p)
+	for (j=0, --p; j<nvars+nstk; ++j, --p)
 	    if (!write_word (svf, *p))			return 0;
 
 	/* Calculate length written thus far. */

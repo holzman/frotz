@@ -107,7 +107,7 @@ void memory_word (const zchar *s)
     zword addr;
     zchar c;
 
-    if (h_version == V6) {
+    if (z_header.h_version == V6) {
 
 	int width = os_string_width (s);
 
@@ -153,12 +153,12 @@ void memory_close (void)
 	if (redirect[depth].xsize != 0xffff)
 	    memory_new_line ();
 
-	if (h_version == V6) {
+	if (z_header.h_version == V6) {
 
-	    h_line_width = (redirect[depth].xsize != 0xffff) ?
+	    z_header.h_line_width = (redirect[depth].xsize != 0xffff) ?
 		redirect[depth].total : redirect[depth].width;
 
-	    SET_WORD (H_LINE_WIDTH, h_line_width)
+	    SET_WORD (H_LINE_WIDTH, z_header.h_line_width)
 
 	}
 
