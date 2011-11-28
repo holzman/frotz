@@ -321,7 +321,7 @@ dist: distclean
 		fi; \
 	done
 	find $(distdir) -type l -exec rm -f {} \;
-	tar chof $(distdir).tar $(distdir)
+	tar chof $(distdir).tar $(distdir) --exclude=.svn
 	gzip -f --best $(distdir).tar
 	rm -rf $(distdir)
 	@echo
@@ -336,8 +336,7 @@ clean:
 	rm -f *core
 
 distclean: clean
-	rm -f $(BINNAME)$(EXTENSION) d$(BINNAME)$(EXTENSION) \
-		x$(BINNAME)$(EXTENSION)
+	rm -f $(BINNAME)$(EXTENSION) d$(BINNAME)$(EXTENSION) x$(BINNAME)$(EXTENSION)
 	-rm -rf $(distdir)
 	-rm -f $(distdir).tar $(distdir).tar.gz
 
