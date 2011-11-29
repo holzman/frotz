@@ -530,6 +530,10 @@ void	runtime_error (int);
 
 #define ERR_DEFAULT_REPORT_MODE ERR_REPORT_ONCE
 
+/*** Assorted initialization functions ***/
+void	init_buffer (void);
+void	init_process (void);
+void	init_sound (void);
 
 /*** Various global functions ***/
 
@@ -574,6 +578,7 @@ int	os_random_seed (void);
 int  	os_read_file_name (char *, const char *, int);
 zchar	os_read_key (int, int);
 zchar	os_read_line (int, zchar *, int, int, int);
+zword	os_read_mouse (void);
 void 	os_reset_screen (void);
 void 	os_restart_game (int);
 void 	os_scroll_area (int, int, int, int, int);
