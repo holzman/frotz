@@ -11,17 +11,11 @@
 #include "blorb.h"
 #include "blorblow.h"
 
-//#ifdef BLORB_BIG_ENDIAN
-
 #if BYTE_ORDER == BIG_ENDIAN
 static char contentsticker[] = "\nBlorb Library 1.0 (big-endian)\n";
 #define bb_native2(v) (v)
 #define bb_native4(v) (v)
-#endif
-
-//#ifdef BLORB_LITTLE_ENDIAN
-
-#if BYTE_ORDER == LITTLE_ENDIAN
+#elif BYTE_ORDER == LITTLE_ENDIAN
 static char contentsticker[] = "\nBlorb Library 1.0 (little-endian)\n";
 #define bb_native2(v)   \
     ( (((uint16)(v) >> 8) & 0x00ff)    \
