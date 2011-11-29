@@ -32,7 +32,7 @@ For update history, see the file "Changelog".
 For information on known bugs in Frotz, see the file "BUGS".
 
 For bug reports, check the Unix Frotz website to see if there's a new
-release.  If not, send your bug report to me at dgriffi@cs.csubak.edu.
+release.  If not, send your bug report to me at davidgriffith@acm.org.
 
 For information on porting Frotz to new platforms, see the file "PORTING".
 
@@ -41,7 +41,7 @@ containing Frotz and including Frotz in BSD-style ports/pkgsrc trees,
 see the file "PACKAGING".
 
 The latest information on Unix Frotz is available at the Unix Frotz
-homepage at http://www.cs.csubak.edu/~dgriffi/proj/frotz/.
+homepage at http://frotz.sourceforge.net.
 
 The latest release of Unix Frotz is available from the Interactive
 Fiction Archive at:
@@ -54,12 +54,21 @@ ftp://ftp.ifarchive.org/if-archive/infocom/interpreters/
 The Interactive Fiction Archive has several mirrors which may be better
 choices depending on where you live.  Here is a partial list.
 
+Webpages:
 http://www.ifarchive.org/				(USA, Pittsburgh, PA)
-http://mirror.ifarchive.org/				(USA)
-ftp://ftp.ifarchive.com/if-archive/			(USA, Los Angeles, CA)
-ftp://ftp.guetech.org/if-archive/			(USA, Bremerton, WA)
-ftp://ftp.plover.net/if-archive/			(USA, Chicago, IL)
-ftp://ftp.funet.fi/pub/misc/if-archive/			(Finland)
-http://www.planetmirror.com/pub/if-archive/		(Australia)
-ftp://ftp.planetmirror.com/pub/if-archive/		(Australia)
+http://ifarchive.jmac.org/				(USA)
+http://ifmirror.russotto.net/				(USA)
+http://ifarchive.flavorplex.com/			(USA)
+http://ifarchive.smallwhitehouse.org/			(USA)
+http://ifarchive.wurb.com/				(USA)
+http://ifarchive.plover.net/				(USA)
+http://www.ifarchive.info/				(USA)
+http://ifarchive.ifreviews.org/				(USA)
+http://ifarchive.heanet.ie/				(Ireland)
+http://ifarchive.giga.or.at/				(Austria)
+http://mirrors.ibiblio.org/interactive-fiction/		(USA)
 
+FTP:
+ftp://ftp.ifarchive.org/if-archive/			(USA, Los Angeles, CA)
+ftp://ftp.funet.fi/pub/misc/if-archive/			(Finland)
+ftp://ifarchive.ifreviews.org/if-archive/		(USA)

@@ -5,11 +5,11 @@ Original Unix port:
 	Galen Hazelwood <galenh@micron.net>
 
 New Frotz reference code:
+	David Griffith <davidgriffith@acm.org>
 	Jim Dunleavy <jim.dunleavy@erha.ie>
-	David Griffith <dgriffi@cs.csubak.edu>
 
 New Unix port:
-	David Griffith <dgriffi@cs.csubak.edu>
+	David Griffith
 
 V6 semi-support:
 	Alembic Petrofsky <alembic@petrofsky.berkeley.ca.us>

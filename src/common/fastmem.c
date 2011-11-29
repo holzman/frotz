@@ -76,11 +76,8 @@ char save_name[MAX_FILE_NAME + 1] = DEFAULT_SAVE_NAME;
 char auxilary_name[MAX_FILE_NAME + 1] = DEFAULT_AUXILARY_NAME;
 */
 
-//zbyte far *zmp = NULL;
-//zbyte far *pcp = NULL;
-
-zbyte *zmp = NULL;
-zbyte *pcp = NULL;
+zbyte far *zmp = NULL;
+zbyte far *pcp = NULL;
 
 static FILE *story_fp = NULL;
 

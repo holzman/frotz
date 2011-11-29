@@ -5,41 +5,45 @@ lot of different platforms.
 These are actively-maintained ports and their webpages (if known):
 ------------------------------------
 
-WinFrotz
-Frotz for machines running Microsoft Windows.
-http://www.d.kinder.btinternet.co.uk
+CliFrotz
+A new port of Frotz (2.43 based) to PalmOS
+http://zodiacstuff.sourceforge.net/clifrotz.html
 
-AmigaFrotz
-Frotz for the Amiga series of computers.
-(no webpage)
+Frotz for iOS
+Play Frotz on your iPhone, iPad, or iPod.
+http://code.google.com/p/iphonefrotz/
+also found in the Apple App Store
 
 FrotzCE
-Frotz for PocketPC machines running WindowsCE.
-http://www.pyram-id.demon.co.uk/FrotzCE.html
-(Based on 2.32)
+A port of Frotz to Windows CE.
+http://www.yetanotherhomepage.com/j7xx/j7xx.html?/j7xx/software/games/frotzce.html
 
-DOS
-Good ol' DOS
-(no webpage)
+GBAFrotz
+A port of Frotz to the Nintendo Gameboy Advance
+http://gbaemu.dcemu.co.uk/gbafrotz.shtml
+
+Infocom Bot
+An AIM chat bot that uses Dumb Frotz
+http://waxy.org/projects/ifbot
 
 Kwest
 Frotz ported to KDE.
-http://users.pandora.be/peter.bienstman/kwest/
+http://kwest.sourceforge.net/
 
-EbmFrotz
-Frotz ported to Franklin's eBookman.
-http://www.twpo.com.au/cwarrens/ebm
+WinFrotz
+Frotz for machines running Microsoft Windows.
+http://freespace.virgin.net/davidk.kinder/frotz.html
 
 
 
 Nobody maintains these ports:
 -----------------------------
 
-Pilot Frotz
-Frotz for Palm Pilot machines.
-http://www.geocities.com/SiliconValley/Way/2367/
-(Link has been dead for several months)
-
+AmigaFrotz	Good ol' Commodore Amiga
+DOS Frotz	Good ol' DOS
+EbmFrotz	Frotz ported to Franklin's eBookman
+FrotzCE		Frotz for PocketPC machines running WindowsCE
+DCFrotz		Frotz for the Sega Dreamcast
 
 
 Frotz might work well with these platforms:
@@ -87,13 +91,7 @@ Commodore 128:
 Probably same troubles as with Apple II.
 
 Atari 8-bit:
-Probably troubles as with the Commodore 64.
-
-Wireless phones:
-They might have enough memory to handle Frotz, but I have severe doubts
-about how usable any sort of Interactive Fiction can be on such a
-device.  Phones were not designed to be used as general-purpose
-terminals.
+Probably same troubles as with the Commodore 64.
 
 Digital cameras:
 Someone ported the venerable arcade machine emulator MAME to a Kodak
@@ -124,7 +122,7 @@ into versions 3 and beyond, we decided to leave that class of
 machine behind.
 
 -----Original Message-----
-From: Dave [mailto:dgriffi@cs.csubak.edu]
+From: Dave <dgriffi@cs.csubak.edu>
 Sent: Thursday, August 08, 2002 6:43 PM
 To: prof@ludix.com
 Subject: porting Frotz to 6502 machines
