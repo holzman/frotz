@@ -10,7 +10,7 @@ CC = gcc
 # Standard (note: Solaris on UltraSparc using gcc 2.8.x might not like this.)
 #
 #OPTS = -O2 -g
-OPTS = -g
+OPTS = -g -ansi -pedantic -Wall -Wstrict-prototypes
 
 # Pentium with gcc 2.7.0 or better
 #OPTS = -O2 -fomit-frame-pointer -malign-functions=2 -malign-loops=2 \
