@@ -18,10 +18,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+#include "../interface_check.h"
+
 #ifdef INTERFACE_CURSES
-#ifdef USE_NCURSES_H
-#include <ncurses.h>
-#else
+ #ifdef USE_NCURSES_H
+  #include <ncurses.h>
+ #else
 #include <curses.h>
 #endif
 #endif
