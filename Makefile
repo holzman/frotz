@@ -10,7 +10,9 @@ CC = gcc
 # Standard (note: Solaris on UltraSparc using gcc 2.8.x might not like this.)
 #
 #OPTS = -O2 -g
-OPTS = -g -ansi -pedantic -Wall -Wstrict-prototypes
+#OPTS = -g -ansi -pedantic -Wall -Wstrict-prototypes
+#OPTS = -g
+OPTS = -g -pedantic -Wall -Wstrict-prototypes
 
 # Pentium with gcc 2.7.0 or better
 #OPTS = -O2 -fomit-frame-pointer -malign-functions=2 -malign-loops=2 \
@@ -158,9 +160,8 @@ XLIB_OBJECT = $(XLIB_DIR)/x_init.o \
 # Blorb file handling
 #
 BLORB_DIR = $(SRCDIR)/blorb
-BLORB_TARGET =	$(SRCDIR)/ux_blorb.a
-BLORB_OBJECT =	$(BLORB_DIR)/blorblib.o \
-		$(BLORB_DIR)/ux_blorb.o
+BLORB_TARGET =	$(SRCDIR)/blorblib.a
+BLORB_OBJECT =	$(BLORB_DIR)/blorblib.o
 
 # Audio code
 #
