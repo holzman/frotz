@@ -41,7 +41,7 @@
 #define PIC_HEADER_HEIGHT 4
 
 static void safe_mvaddch(int, int, int);
-static void save_scrnset(int, int, int, int);
+/* static void save_scrnset(int, int, int, int); */
 
 static struct {
   int z_num;
@@ -72,7 +72,7 @@ static int round_div(int x, int y)
 	int quotient = x / y;
 	int dblremain = (x % y) << 1;
 
-	if ((dblremain > y) || (dblremain == y) && (quotient & 1))
+	if ((dblremain > y) || ((dblremain == y) && (quotient & 1)) )
 		quotient++;
 	return quotient;
 }
@@ -126,7 +126,7 @@ bool unix_init_pictures (void)
     /* Copy and scale.  */
     for (i = 1; i <= num_pictures; i++) {
       unsigned char *p = raw_info + entry_size * (i - 1);
-      int height, width;
+/*      int height, width; */ /* what were these for??? */
       pict_info[i].z_num = lookupw(p, PIC_HEADER_NUMBER);
       pict_info[i].orig_height = lookupw(p, PIC_HEADER_HEIGHT);
       pict_info[i].orig_width = lookupw(p, PIC_HEADER_WIDTH);

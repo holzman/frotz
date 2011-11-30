@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <libgen.h>
 
 #include <time.h>
 
@@ -136,7 +138,7 @@ extern char auxilary_name[];
 
 void os_process_arguments (int argc, char *argv[])
 {
-    int c, i;
+    int c;
 
     char *p = NULL;
 
@@ -271,8 +273,8 @@ void os_process_arguments (int argc, char *argv[])
     /* Save the story file name */
 
 
-    f_setup.story_file = strdup(argv[optind]);
-    f_setup.story_name = strdup((char *)basename(argv[optind]));
+    f_setup.story_file = (char *)strdup(argv[optind]);
+    f_setup.story_name = (char *)strdup(basename(argv[optind]));
 
     /* Now strip off the extension. */
     p = rindex(f_setup.story_name, '.');
@@ -286,7 +288,7 @@ void os_process_arguments (int argc, char *argv[])
     	}
     }
 
-    f_setup.story_path = strdup((char *)dirname(argv[optind]));
+    f_setup.story_path = (char *) strdup(dirname(argv[optind]));
 
     /* Create nice default file names */
 
@@ -319,7 +321,7 @@ void os_process_arguments (int argc, char *argv[])
     strncat(f_setup.aux_name, EXT_AUX, strlen(EXT_AUX));
 
 
-    switch (ux_init_blorb()) {
+    switch (unix_init_blorb()) {
 	case bb_err_Format:	printf("Blorb file loaded, but unable to build map.\n\n");
 				break;
     }
@@ -991,7 +993,7 @@ void os_init_setup(void)
 
 
 
-int ux_init_blorb(void)
+int unix_init_blorb(void)
 {
 	FILE	*blorbfile;
 
@@ -1035,4 +1037,5 @@ int ux_init_blorb(void)
 			u_setup.use_blorb = 1;
 		}
 	}
+	return 0;
 }

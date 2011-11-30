@@ -82,10 +82,11 @@ extern u_setup_t u_setup;
 
 /*** Functions specific to the Unix port of Frotz ***/
 
-bool 	unix_init_pictures(void);	/* ux_pic */
-void	unix_init_scrollback(void);	/* ux_screen */
-void	unix_save_screen(int);		/* ux_screen */
-void	unix_do_scrollback(void);	/* ux_screen */
+bool 	unix_init_pictures(void);	/* ux_pic.c */
+void	unix_init_scrollback(void);	/* ux_screen.c */
+void	unix_save_screen(int);		/* ux_screen.c */
+void	unix_do_scrollback(void);	/* ux_screen.c */
+int	unix_init_blorb(void);		/* ux_init.c */
 int     getconfig(char *);
 int     geterrmode(char *);
 int     getcolor(char *);

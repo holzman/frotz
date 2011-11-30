@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <limits.h>
 
 #include <sys/time.h>
@@ -653,6 +654,7 @@ zword os_read_mouse (void)
 {
 	/* INCOMPLETE */
 
+    return 0;
 } /* os_read_mouse */
 
 
