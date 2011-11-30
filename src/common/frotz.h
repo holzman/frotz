@@ -17,7 +17,10 @@
 
 #ifndef __UNIX_PORT_FILE
 #include <signal.h>
+
+#ifndef bool
 typedef int bool;
+#endif
 
 #ifndef TRUE
 #define TRUE 1
