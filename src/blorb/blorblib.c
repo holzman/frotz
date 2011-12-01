@@ -11,13 +11,17 @@
 #include "blorb.h"
 #include "blorblow.h"
 
-#if BYTE_ORDER == BIG_ENDIAN
+/* This endian stuff needs to be fixed with something from
+ * http://www.ibm.com/developerworks/aix/library/au-endianc/index.html
+ */
+
+#ifdef BLORB_BIG_ENDIAN
 static char contentsticker[] = "\nBlorb Library 1.0 (big-endian)\n";
 #define bb_native2(v) (v)
 #define bb_native4(v) (v)
 #endif
 
-#if BYTE_ORDER == LITTLE_ENDIAN
+#ifdef BLORB_LITTLE_ENDIAN
 static char contentsticker[] = "\nBlorb Library 1.0 (little-endian)\n";
 #define bb_native2(v)   \
     ( (((uint16)(v) >> 8) & 0x00ff)    \
@@ -41,7 +45,7 @@ static int lib_inited = FALSE;
 
 static bb_err_t bb_initialize_map(bb_map_t *map);
 static bb_err_t bb_initialize(void);
-static int sortsplot(bb_resdesc_t **p1, bb_resdesc_t **p2);
+static int sortsplot(const void *p1, const void *p2);
 
 /* Do some one-time startup tests. */
 static bb_err_t bb_initialize()
@@ -265,7 +269,7 @@ static bb_err_t bb_initialize_map(bb_map_t *map)
                         in map->resources.) This makes it easy to find resources by
                         usage and resource number. */
                     qsort(ressorted, numres, sizeof(bb_resdesc_t *),
-                        (int (*)())&sortsplot);
+                        &sortsplot);
 
                     map->numresources = numres;
                     map->resources = resources;
@@ -548,10 +552,10 @@ char *bb_err_to_string(bb_err_t err)
 }
 
 /* This is used for binary searching and quicksorting the resource pointer list. */
-static int sortsplot(bb_resdesc_t **p1, bb_resdesc_t **p2)
+static int sortsplot(const void *p1, const void *p2)
 {
-    bb_resdesc_t *v1 = *p1;
-    bb_resdesc_t *v2 = *p2;
+    bb_resdesc_t *v1 = *(bb_resdesc_t **)p1;
+    bb_resdesc_t *v2 = *(bb_resdesc_t **)p2;
     if (v1->usage < v2->usage)
         return -1;
     if (v1->usage > v2->usage)
@@ -640,7 +644,7 @@ bb_err_t bb_load_resource(bb_map_t *map, int method, bb_result_t *res,
     ptr = &sample;
 
     found = bsearch(&ptr, map->ressorted, map->numresources, sizeof(bb_resdesc_t *),
-        (int (*)())&sortsplot);
+        &sortsplot);
 
     if (!found)
         return bb_err_NotFound;
