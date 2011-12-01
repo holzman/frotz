@@ -52,7 +52,7 @@ static bb_err_t bb_initialize()
 {
     union {
         uint32 val;
-        char ch[4];
+        unsigned char ch[4];
     } test;
     uint32 val;
 
