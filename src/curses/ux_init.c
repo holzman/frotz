@@ -46,7 +46,6 @@
 #include <termios.h>
 
 #include "ux_frotz.h"
-#include "../blorb/ux_blorb.h"
 
 f_setup_t f_setup;
 u_setup_t u_setup;

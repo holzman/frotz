@@ -8,6 +8,7 @@
 #define CURSES_INTERFACE
 
 #include "../common/frotz.h"
+#include "../blorb/blorb.h"
 #include "ux_setup.h"
 
 #define MASTER_CONFIG		"frotz.conf"
@@ -78,6 +79,36 @@ extern char *gamepath;	/* use to find sound files */
 
 extern f_setup_t f_setup;
 extern u_setup_t u_setup;
+
+typedef struct sampledata_struct {
+	unsigned short channels;
+	unsigned long samples;
+	unsigned short bits;
+	double rate;
+} sampledata_t;
+
+/*** Blorb related stuff ***/
+
+/*
+typedef struct blorb_data_struct {
+	bb_map_t	map;
+	bb_result_t	result;
+} blorb_data_t;
+*/
+
+bb_err_t	blorb_err;
+bb_map_t	*blorb_map;
+bb_result_t	blorb_res;
+
+/* uint32 *findchunk(uint32 *data, char *chunkID, int length); */
+/*
+char *findchunk(char *pstart, char *fourcc, int n);
+unsigned short ReadShort(const unsigned char *bytes);
+unsigned long ReadLong(const unsigned char *bytes);
+double ReadExtended(const unsigned char *bytes);
+#define UnsignedToFloat(u) (((double)((long)(u - 2147483647L - 1))) + 2147483648.0)
+*/
+
 
 
 /*** Functions specific to the Unix port of Frotz ***/
