@@ -52,14 +52,14 @@ static int cursor_row = 0, cursor_col = 0;
 
 /* Compression styles.  */
 static enum {
-  COMPRESSION_NONE, COMPRESSION_SPANS, COMPRESSION_MAX,
+  COMPRESSION_NONE, COMPRESSION_SPANS, COMPRESSION_MAX
 } compression_mode = COMPRESSION_SPANS;
 static char *compression_names[] = {"NONE", "SPANS", "MAX"};
 static int hide_lines = 0;
 
 /* Reverse-video display styles.  */
 static enum {
-  RV_NONE, RV_DOUBLESTRIKE, RV_UNDERLINE, RV_CAPS,
+  RV_NONE, RV_DOUBLESTRIKE, RV_UNDERLINE, RV_CAPS
 } rv_mode = RV_NONE;
 static char *rv_names[] = {"NONE", "DOUBLESTRIKE", "UNDERLINE", "CAPS"};
 static char rv_blank_char = ' ';
@@ -132,13 +132,14 @@ void os_set_text_style(int x)
 static void dumb_display_char(char c)
 {
   dumb_set_cell(cursor_row, cursor_col, make_cell(current_style, c));
-  if (++cursor_col == z_header.h_screen_cols)
+  if (++cursor_col == z_header.h_screen_cols) {
     if (cursor_row == z_header.h_screen_rows - 1)
       cursor_col--;
     else {
       cursor_row++;
       cursor_col = 0;
     }
+  }
 }
 
 void dumb_display_user_input(char *s)
