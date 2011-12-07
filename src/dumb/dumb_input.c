@@ -59,7 +59,7 @@ static bool do_more_prompts = TRUE;
 enum input_type {
   INPUT_CHAR,
   INPUT_LINE,
-  INPUT_LINE_CONTINUED,
+  INPUT_LINE_CONTINUED
 };
 
 /* get a character.  Exit with no fuss on EOF.  */
