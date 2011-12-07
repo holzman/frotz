@@ -427,4 +427,5 @@ void dumb_init_input(void)
 zword os_read_mouse(void)
 {
 	/* NOT IMPLEMENTED */
+  return 0;
 }
